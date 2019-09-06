@@ -29,6 +29,7 @@ use SM\XRetail\Repositories\Contract\ServiceAbstract;
  */
 class WishlistManagement extends ServiceAbstract
 {
+
     /**
      * @var
      */
@@ -92,9 +93,9 @@ class WishlistManagement extends ServiceAbstract
         $this->objectManager                       = $objectManager;
         $this->productRepository                   = $productRepository;
         $this->wishlistFactory                     = $wishlistFactory;
-        $this->eventManager                       = $eventManager;
+        $this->eventManager                        = $eventManager;
         $this->wishlistItemOptionCollectionFactory = $wishlistItemOptionCollectionFactory;
-        $this->retailConfig = $retailConfig;
+        $this->retailConfig                        = $retailConfig;
         $this->catalogProduct                      = $catalogProduct;
         parent::__construct($requestInterface, $dataConfig, $storeManager);
     }
@@ -106,7 +107,7 @@ class WishlistManagement extends ServiceAbstract
     public function add()
     {
         $this->catalogProduct->setSkipSaleableCheck(true);
-        
+
         $wishlist = $this->getWishlist();
         if (!$wishlist) {
             throw new Exception(__("Can't get wishlist."));
@@ -168,9 +169,14 @@ class WishlistManagement extends ServiceAbstract
         }
         try {
             if ($customerId = $this->getRequestData()->getData('customer_id')) {
+                $storeId = $this->getRequest()->getParam('storeId');
+                if (!$storeId) {
+                    $storeId = $this->getRequest()->getParam('store_id');
+                }
                 /** @var  \Magento\Wishlist\Model\Wishlist $wishlist */
                 $wishlist = $this->wishlistFactory->create();
                 $wishlist->loadByCustomerId($customerId, true);
+                $wishlist->setSharedStoreIds($storeId);
 
                 if (!$wishlist->getId() || $wishlist->getCustomerId() != $customerId) {
                     throw new \Magento\Framework\Exception\NoSuchEntityException(
@@ -250,23 +256,52 @@ class WishlistManagement extends ServiceAbstract
     public function remove()
     {
         $customerId   = $this->getRequest()->getParam('customer_id');
+        $productId    = $this->getRequest()->getParam('product_id');
         $wishlistItem = $this->getRequest()->getParam('items');
         $removeAll    = $this->getRequest()->getParam('removeAll');
 
-        if (is_null($customerId) || ((!is_array($wishlistItem) || count($wishlistItem) < 1) && !$removeAll)) {
-            throw new Exception(__('Something wrong! Missing require value'));
+        if (!is_array($wishlistItem)) {
+            $wishlistItem = explode(',', $wishlistItem);
         }
-        if (!$removeAll) {
-            foreach ($wishlistItem as $wishlist) {
-                $productId = $wishlist['wishlist_item_id'];
+        if ($removeAll == 'true') {
+            if (is_null($customerId) || ((!is_array($wishlistItem) || count($wishlistItem) < 1))) {
+                throw new \Exception(__('Something wrong! Missing require value'));
+            }
 
-                $this->removeItemWishlist($productId);
+            foreach ($wishlistItem as $wishlist) {
+//                $productId = $wishlist['wishlist_item_id'];
+
+                $this->removeItemWishlist($wishlist);
             }
         } else {
-            $this->removeItemWishlist(null);
+            $this->removeItemWishlist($productId);
         }
 
         return ["success" => true, "message" => __('Wishlist item has been removed')];
+    }
+
+    /**
+     * @return array
+     * @throws \Exception
+     */
+    public function removeItemFromCposWishList()
+    {
+        $customerId   = $this->getRequest()->getParam('customer_id');
+        $storeId      = $this->getRequest()->getParam('store_id');
+        $wishlistItem = $this->getRequest()->getParam('items');
+
+        if (!is_array($wishlistItem)) {
+            $wishlistItem = explode(',', $wishlistItem);
+        }
+        try {
+            foreach ($wishlistItem as $wishlist) {
+                $productId = $wishlist['wishlist_item_id'];
+                $this->removeItemWishlist($productId);
+            }
+            return ["success" => true, "message" => __('Wishlist item has been removed')];
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
+        }
     }
 
     /**
