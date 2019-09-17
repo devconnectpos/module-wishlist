@@ -269,8 +269,6 @@ class WishlistManagement extends ServiceAbstract
             }
 
             foreach ($wishlistItem as $wishlist) {
-//                $productId = $wishlist['wishlist_item_id'];
-
                 $this->removeItemWishlist($wishlist);
             }
         } else {
@@ -296,7 +294,7 @@ class WishlistManagement extends ServiceAbstract
         try {
             foreach ($wishlistItem as $wishlist) {
                 $productId = $wishlist['wishlist_item_id'];
-                $this->removeItemWishlist($productId);
+                $this->removeItemWishlist($productId, true);
             }
             return ["success" => true, "message" => __('Wishlist item has been removed')];
         } catch (Exception $e) {
@@ -306,17 +304,19 @@ class WishlistManagement extends ServiceAbstract
 
     /**
      * @param null $productId
+     * @param bool $isFromCPos
      *
      * @throws \Exception
      */
-    protected function removeItemWishlist($productId = null)
+    protected function removeItemWishlist($productId = null, $isFromCPos = false)
     {
         $wish  = $this->getWishlist();
         $items = $wish->getItemCollection();
 
         /** @var \Magento\Wishlist\Model\Item $item */
         foreach ($items as $item) {
-            if (is_null($productId) || $item->getProductId() == $productId) {
+            if (($isFromCPos === false && (is_null($productId) || $item->getProductId() == $productId)) ||
+                ($isFromCPos === true && $item->getWishlistItemId() == $productId)) {
                 $item->delete();
                 $wish->save();
             }
