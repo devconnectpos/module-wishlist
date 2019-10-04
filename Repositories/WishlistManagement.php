@@ -264,7 +264,7 @@ class WishlistManagement extends ServiceAbstract
             $wishlistItem = explode(',', $wishlistItem);
         }
         if ($removeAll == 'true') {
-            if (is_null($customerId) || ((!is_array($wishlistItem) || count($wishlistItem) < 1))) {
+            if (is_null($customerId) || ((!is_array($wishlistItem) || (is_array($wishlistItem) && count($wishlistItem) < 1)))) {
                 throw new \Exception(__('Something wrong! Missing require value'));
             }
 
