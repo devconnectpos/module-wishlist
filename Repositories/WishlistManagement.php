@@ -261,7 +261,7 @@ class WishlistManagement extends ServiceAbstract
         $removeAll    = $this->getRequest()->getParam('removeAll');
 
         if (!is_array($wishlistItem)) {
-            $wishlistItem = explode(',', $wishlistItem);
+            $wishlistItem = explode(',', (string)$wishlistItem);
         }
         if ($removeAll == 'true') {
             if (is_null($customerId) || ((!is_array($wishlistItem) || (is_array($wishlistItem) && count($wishlistItem) < 1)))) {
@@ -289,7 +289,7 @@ class WishlistManagement extends ServiceAbstract
         $wishlistItem = $this->getRequest()->getParam('items');
 
         if (!is_array($wishlistItem)) {
-            $wishlistItem = explode(',', $wishlistItem);
+            $wishlistItem = explode(',', (string)$wishlistItem);
         }
         try {
             foreach ($wishlistItem as $wishlist) {
